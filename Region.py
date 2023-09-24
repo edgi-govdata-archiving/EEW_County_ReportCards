@@ -79,7 +79,8 @@ class Region:
 
     def get_counties_by_state(self, state):
         conn = sqlite3.connect("region.db")
-        sql = 'select region as county from regions where state=\'{}\' and region_type=\'County\''
+        sql = 'select region as county from regions where state=\'{}\''\
+              ' and region_type=\'County\''.format(state)
         df = pd.read_sql_query(sql, conn)
         return df
 
