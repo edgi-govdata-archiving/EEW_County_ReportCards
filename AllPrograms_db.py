@@ -472,16 +472,16 @@ def _get_county_per_1000(cursor, region_id, state, county, year):
         for event_type in ['inspections', 'violations', 'enforcements']:
             num_events[(program, event_type)] = 0 if active == 0 \
                 else 1000. * num_events[(program, event_type)] / active
-        return (num_events[('CAA', 'inspections')],
-                num_events[('CAA', 'violations')],
-                num_events[('CAA', 'enforcements')],
-                num_events[('CWA', 'inspections')],
-                num_events[('CWA', 'violations')],
-                num_events[('CWA', 'enforcements')],
-                num_events[('RCRA', 'inspections')],
-                num_events[('RCRA', 'violations')],
-                num_events[('RCRA', 'enforcements')],
-                'County')
+    return (num_events[('CAA', 'inspections')],
+            num_events[('CAA', 'violations')],
+            num_events[('CAA', 'enforcements')],
+            num_events[('CWA', 'inspections')],
+            num_events[('CWA', 'violations')],
+            num_events[('CWA', 'enforcements')],
+            num_events[('RCRA', 'inspections')],
+            num_events[('RCRA', 'violations')],
+            num_events[('RCRA', 'enforcements')],
+            'County')
 
 
 def _get_cd_per_1000(cursor, region_mode, state, cd, year):
