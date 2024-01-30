@@ -61,13 +61,19 @@ def get_rowdata(df, field, flag):
     return count_viol, num_fac
 
 
-def get_cwa_df(df):
+def get_cwa_df(df, focus_year):
     year = df["YEARQTR"].astype("str").str[0:4:1]
     df["YEARQTR"] = year
     df.rename(columns={"YEARQTR": "YEAR"}, inplace=True)
     # Remove fields not relevant to this graph.
     df = df.drop(
         columns=[
+            "HLRNC",
+            "FAC_NAME",
+            "FAC_STREET",
+            "FAC_CITY",
+            "FAC_STATE",
+            "FAC_COUNTY",
             "FAC_LAT",
             "FAC_LONG",
             "FAC_ZIP",
@@ -84,9 +90,11 @@ def get_cwa_df(df):
     )
     d = df.groupby(pd.to_datetime(df["YEAR"], format="%Y").dt.to_period("Y")).sum()
     d.index = d.index.strftime("%Y")
-    d = d[d.index > "2000"]
-    d["Total"] = d.sum(axis=1)
-    return d
+    d1 = d[d.index <= focus_year]
+    d2 = d1[d1.index > "2000"]
+    cols = ['NUME90Q', 'NUMCVDT', 'NUMSVCD', 'NUMPSCH']
+    d2["Total"] = d2[cols].sum(axis=1)
+    return d2
 
 
 def get_inspections(ds, ds_type):

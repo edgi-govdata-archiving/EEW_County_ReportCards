@@ -98,7 +98,7 @@ def write_CWA_violations(region_mode, df, ds_type):
         # idx will be the year
         for idx, row in df.iterrows():
             sql = ins_sql.format(rowid, "CWA", idx, row["Total"], row["Total"])
-            cursor.execute(sql)
+            tcursor.execute(sql)
     conn.commit()
 
 
