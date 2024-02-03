@@ -98,7 +98,7 @@ def write_CWA_violations(region_mode, df, ds_type):
         # idx will be the year
         for idx, row in df.iterrows():
             sql = ins_sql.format(rowid, "CWA", idx, row["Total"], row["Total"])
-            tcursor.execute(sql)
+            cursor.execute(sql)
     conn.commit()
 
 
@@ -150,7 +150,7 @@ def write_total_inspections(program, df_pgm, ds_type):
 '''
 
 
-def write_enforcements(region_mode, program, ds, ds_type):
+def write_enforcements(region_mode, program, ds, ds_type, focus_year):
     ins_sql = "insert into enforcements (region_id,program,year,amount,count) "
     ins_sql += "values ({},'{}',{},{},{})"
     ins_sql += " on conflict(region_id,program,year) do update set amount={}, count={}"
@@ -162,6 +162,7 @@ def write_enforcements(region_mode, program, ds, ds_type):
     cd = ds_type[1]
     rowid = AllPrograms_util.get_region_rowid(cursor, region_mode, state, cd)
     df_pgm = AllPrograms_util.get_enforcements(ds, ds_type)
+    inflation = AllPrograms_util.get_inflation(cursor, focus_year)
     # pdb.set_trace()
     if df_pgm is not None:
         # idx will be the year

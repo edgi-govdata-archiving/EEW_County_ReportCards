@@ -32,14 +32,14 @@ def get_region_rowid(cursor, region_mode, state, region):
 # ### 7. Number of currently active facilities regulated in CAA, CWA, RCRRA, GHGRP
 # * The program_count() function looks at the ECHO_EXPORTER data that is passed in and counts the number of facilities have the 'flag' parameter set to 'Y' (AIR_FLAG, NPDES_FLAG, RCRA_FLAG, GHG_FLAG)
 # * cd_echo_data is a dictionary with key (state, cd), where the state_echo_data is filtered for records of the current CD.
-# * cd_echo_active is a dictionary for active facilities in the CD.
+# * cd_echo_active is a dictionary for active facilities in the region.
 # * The number of records from these dictionaries is written into a file named like 'active-facilities_All_pg3', in a directory identified by the state and CD, e.g. "LA2".
 
 
 def program_count(echo_data, program, flag, state, cd):
     count = echo_data.loc[echo_data[flag] == "Y"].shape[0]
     print(
-        "There are {} active facilities in {} CD {} tracked under {}.".format(
+        "There are {} active facilities in {} - {} tracked under {}.".format(
             str(count), state, cd, program
         )
     )
@@ -303,7 +303,6 @@ def get_top_violators(df_active, flag, noncomp_field, action_field, num_fac=10):
     )
     df_active = df_active.head(num_fac)
     return df_active
-
 
 def build_all_per_1000(total_df):
     """

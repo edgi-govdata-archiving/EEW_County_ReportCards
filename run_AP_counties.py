@@ -113,6 +113,7 @@ def main(argv):
         rslt = subprocess.call(command,shell=True)
         if rslt == 0:
             clean_region_db()
+            next_state = states_file.readline().rstrip()
         else:
             # A new region.db will be needed.
             # The inflation and real_cds tables need to be populated.
