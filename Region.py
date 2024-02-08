@@ -24,9 +24,7 @@ def get_inflation(base_year):
     df = pd.DataFrame.from_dict(inflation_by_year, orient='index')
     df = df.sort_index()
     df.reset_index(inplace=True)
-    # df = df.reindex()
-    # df.columns = ['Year', 'rate']
-    # df = df.rename( columns=['Year', 'rate'])
+    df.columns = ['Year', 'rate']
     return df
 
 
@@ -233,7 +231,16 @@ class Region:
             sql = sql.format(base_year)
         else:
             sql = sql.format(base_year, program)
-        return pd.read_sql_query(sql, conn)
+        df = pd.read_sql_query(sql, conn)
+        if event_type == 'enforcements':
+            self._apply_inflation(df, base_year)
+        return df
+
+    def _apply_inflation(self, df, base_year):
+        inflation_df = get_inflation(base_year)
+        for idx, row in df.iterrows():
+            df.at[idx, 'Amount'] = row['Amount'] * \
+                        inflation_df[inflation_df['Year'] == row['Year']]['rate'].iloc[0]
 
     def get_non_compliants(self, program):
         conn = sqlite3.connect("region.db")
