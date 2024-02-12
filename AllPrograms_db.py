@@ -365,6 +365,18 @@ def write_single_cd_states():
             cursor.execute(sql)
     conn.commit()
 
+def clean_per_1000():
+    """
+    Clear all data from state_per_1000, cd_per_1000 and county_per_1000
+    in preparation for rebuilding these tables.
+    """
+    conn = sqlite3.connect('region.db')
+    sql = 'delete from {}'
+    for table in ['state_per_1000', 'cd_per_1000', 'county_per_1000']:
+        do_sql = sql.format(table)
+        cur = conn.cursor()
+        cur.execute(do_sql)
+    conn.commit()
 
 def make_per_1000(focus_year):
     """
