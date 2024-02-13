@@ -1,6 +1,22 @@
 import pdb
 import pandas as pd
+import sqlite3
 
+def set_focus_year(year):
+    conn = sqlite3.connect("region.db")
+    cursor = conn.cursor()
+    sql = "insert into config (focus_year) values ({})".format(year)
+    cursor.execute(sql)
+    conn.close()
+
+def get_focus_year():
+    conn = sqlite3.connect("region.db")
+    cursor = conn.cursor()
+    sql = 'select focus_year from config'
+    cursor.execute(sql)
+    focus_year = cursor.fetchone()
+    conn.close()
+    return focus_year
 
 def get_region_rowid(cursor, region_mode, state, region):
     sel_sql = "select rowid from regions where region_type='{}' and state='{}'"

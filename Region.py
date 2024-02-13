@@ -2,8 +2,10 @@ import pdb
 import os
 import pandas as pd
 import sqlite3
-from AllPrograms_util import get_region_rowid
+from EEW_County_ReportCards.AllPrograms_util import get_region_rowid, get_focus_year
 
+# Global variable for the year of the report
+Focus_Year = None
 
 def get_inflation(base_year):
     # base_year is the year for which a dollar is a dollar
@@ -52,29 +54,25 @@ class Region:
         The DataSet objects for the region 
     '''
 
-    def __init__(self, type, value=None, state=None, programs=None):
+    def __init__(self, type=None, value=None, state=None, programs=None):
 
         self.type = type  # Region type
         self.value = value  # Region instance
         self.state = state  # State
         self.programs = programs  # The EPA programs to include
 
-        conn = sqlite3.connect("region.db")
-        cursor = conn.cursor()
 
-        pdb.set_trace()
-        self.region_id = get_region_rowid(cursor, self.type, self.state, self.value)
-        conn.close()
+        if type != None:
+            conn = sqlite3.connect("region.db")
+            cursor = conn.cursor()
+            self.region_id = get_region_rowid(cursor, self.type, self.state, self.value)
+            conn.close()
 
-    '''
-        CREATE TABLE per_fac (
-        region_id tinyint,
-        program char(20),
-        type char(20),
-        year tinyint,
-        count real,
-        unique(region_id,program,type,year));
-    '''
+    def get_focus_year():
+        global Focus_Year
+        if Focus_Year is None:
+            Focus_Year = get_focus_year()
+        return Focus_Year
 
     def get_counties_by_state(self, state):
         conn = sqlite3.connect("region.db")
@@ -89,12 +87,12 @@ class Region:
         df = pd.read_sql_query(sql, conn)
         return df
 
-    def get_per_1000(self, type, region, year):
+    def get_per_1000(self, type, region):
         # type is 'inspections' or 'violations'
         # region is 'USA', 'State', 'CD'
         # programs is a list of the programs to be included--CAA, CWA, etc.
         if (region == 'USA' or region == 'State'):
-            return self._get_region_per_1000(type, region, year)
+            return self._get_region_per_1000(type, region)
         # For CDs we can just use the per_fac table and
         # active_facilities for the region
         conn = sqlite3.connect("region.db")
@@ -103,13 +101,13 @@ class Region:
         sql += ' where region_id={} and type=\'{}\' and year={}'
         if (self.programs is not None):
             sql += ' and program in (\'{}\')'
-            sql = sql.format(self.region_id, type, year, '\',\''.join(self.programs))
+            sql = sql.format(self.region_id, type, get_focus_year(), '\',\''.join(self.programs))
         else:
-            sql = sql.format(self.region_id, type, year)
+            sql = sql.format(self.region_id, type, get_focus_year())
         df = pd.read_sql_query(sql, conn)
         return df
 
-    def _get_region_per_1000(self, type, region, year):
+    def _get_region_per_1000(self, type, region):
         # type is 'inspections' or 'violations'
         # region is 'USA', 'State', 'CD'
         conn = sqlite3.connect("region.db")
@@ -129,9 +127,9 @@ class Region:
         if (region == 'State'):
             sql += ' and region_id in ( select rowid from regions '
             sql += ' where state=\'{}\' )'
-            sql = sql.format(type, year, self.state)
+            sql = sql.format(type, get_focus_year(), self.state)
         else:
-            sql = sql.format(type, year)
+            sql = sql.format(type, get_focus_year())
         if (self.programs is not None):
             sql += ' and program in (\'{}\')'
             sql = sql.format('\',\''.join(self.programs))
@@ -200,7 +198,7 @@ class Region:
         df = pd.DataFrame(data)
         return df
 
-    def get_events(self, event_type, program, base_year):
+    def get_events(self, event_type, program):
         conn = sqlite3.connect("region.db")
 
         if event_type == 'inspections':
@@ -228,6 +226,7 @@ class Region:
         if (program != 'All'):
             sql += ' and program=\'{}\''
         sql += ' group by year'
+        base_year = get_focus_year()
         if (program == 'All'):
             sql = sql.format(base_year)
         else:

@@ -31,7 +31,6 @@ def main(argv):
     my_args = parser.parse_args()
 
     _region_mode = 'County'
-    focus_year = str(my_args.focus_year)
     state_regions = []
     state_counties = pd.DataFrame()
     if my_args.cds_file:
@@ -57,6 +56,13 @@ def main(argv):
     else:
         print('Option -c, -d, must be used')
         exit
+
+    """
+    The generated database (region.db) will be based on a particular year, generally
+    the last year of complete data in ECHO. Set that as the "focus_year".
+    """
+    focus_year = str(my_args.focus_year)
+    AllPrograms_util.set_focus_year(focus_year)
 
     """
     First get facility information.  If there are no facilities (probably due
