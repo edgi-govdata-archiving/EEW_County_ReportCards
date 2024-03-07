@@ -4,7 +4,7 @@ import pandas as pd
 import sqlite3
 import AllPrograms_util
 from ECHO_modules.get_data import get_echo_data
-from Region import Region
+from Region import Region, get_inflation
 
 
 def get_active_facs(mode, state, region, counties):
@@ -23,6 +23,16 @@ def get_active_facs(mode, state, region, counties):
         print(sql)
     region_echo_data = get_echo_data(sql, "REGISTRY_ID")
     return region_echo_data.loc[region_echo_data["FAC_ACTIVE_FLAG"] == "Y"]
+
+
+def get_real_cds(state):
+    conn = sqlite3.connect("region.db")
+    cursor = conn.cursor()
+
+    sql = "select cd from real_cds where state = '{}'".format(state)
+    cursor.execute(sql)
+    cds = cursor.fetchall()
+    return cds
 
 
 def write_active_facs(region_mode, active_facs, state, cd=None):
@@ -162,7 +172,7 @@ def write_enforcements(region_mode, program, ds, ds_type, focus_year):
     cd = ds_type[1]
     rowid = AllPrograms_util.get_region_rowid(cursor, region_mode, state, cd)
     df_pgm = AllPrograms_util.get_enforcements(ds, ds_type)
-    inflation = AllPrograms_util.get_inflation(cursor, focus_year)
+    inflation = get_inflation(focus_year)
     # pdb.set_trace()
     if df_pgm is not None:
         # idx will be the year

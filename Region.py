@@ -2,13 +2,14 @@ import pdb
 import os
 import pandas as pd
 import sqlite3
-from EEW_County_ReportCards.AllPrograms_util import get_region_rowid, get_focus_year
+from AllPrograms_util import get_region_rowid, get_focus_year
 
 # Global variable for the year of the report
 Focus_Year = None
 
 def get_inflation(base_year):
     # base_year is the year for which a dollar is a dollar
+    base_year = int(base_year)
     conn = sqlite3.connect("region.db")
     cursor = conn.cursor()
 
@@ -18,10 +19,11 @@ def get_inflation(base_year):
     inflation_by_year = {}
     calculated_inflation = 1.0
     for idx, row in df_fac.iterrows():
-        if row['year'] > base_year:
+        year = int(row['year'])
+        if year > base_year:
             continue
-        inflation_by_year[int(row['year'])] = calculated_inflation
-        if row['year'] <= base_year:
+        inflation_by_year[year] = calculated_inflation
+        if year <= base_year:
             calculated_inflation *= 1.0 + .01 * row['rate']
     df = pd.DataFrame.from_dict(inflation_by_year, orient='index')
     df = df.sort_index()

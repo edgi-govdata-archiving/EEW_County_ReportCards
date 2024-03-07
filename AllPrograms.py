@@ -26,22 +26,29 @@ def main(argv):
         help="The year on which the report will focus",
     )
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-d", "--cds_file", required=False, help="The CDs to work with")
+    group.add_argument("-d", "--cds_state", required=False, help="The state to work with")
     group.add_argument("-c", "--county_state", required=False, help="The state to work with")
     my_args = parser.parse_args()
 
     _region_mode = 'County'
     state_regions = []
     state_counties = pd.DataFrame()
-    if my_args.cds_file:
+    if my_args.cds_state:
         _region_mode = 'Congressional District'
+        # Read the CDs for the given state (cds_state) from the
+        # region.db table real_cds
+        """ Old code
         with open(my_args.cds_file, "r") as read_obj:
             csv_reader = reader(read_obj)
             raw_state_regions = list(map(tuple, csv_reader))
         for state, region in raw_state_regions:
-            region = int(region)
-            pd.concat(state_regions, (state, region))
-            # state_regions.append((state, region))
+        """
+        state = my_args.cds_state
+        cds = AllPrograms_db.get_real_cds(state)
+        for cd in cds:
+            cd = int(cd[0])
+            # pd.concat(state_regions, (state, cd))
+            state_regions.append((state, cd))
     elif my_args.county_state:
         _region_mode = 'County'
         url = "https://raw.githubusercontent.com/edgi-govdata-archiving/"
