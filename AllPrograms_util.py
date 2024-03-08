@@ -1,6 +1,11 @@
 import pdb
 import pandas as pd
+import geopandas
+import io
+import requests
+import zipfile
 import sqlite3
+from ECHO_modules.geographies import fips
 
 def set_focus_year(year):
     conn = sqlite3.connect("region.db")
@@ -43,6 +48,16 @@ def get_region_rowid(cursor, region_mode, state, region):
         sql = ins_sql.format(region_mode, state, region_str)
         cursor.execute(sql)
         return cursor.lastrowid
+
+
+def get_cd118_shapefile(state):
+    state_fips = fips[state]
+    url = "https://www2.census.gov/geo/tiger/TIGER2023/CD/tl_2023_"+state_fips+"_cd118.zip"
+    request = requests.get(url)
+    z = zipfile.ZipFile(io.BytesIO(request.content))
+    z.extractall("./content")
+    cd_shapefile = geopandas.read_file("./content/tl_2023_"+state_fips+"_cd118.shp", crs=4269)
+    return cd_shapefile
 
 
 # ### 7. Number of currently active facilities regulated in CAA, CWA, RCRRA, GHGRP

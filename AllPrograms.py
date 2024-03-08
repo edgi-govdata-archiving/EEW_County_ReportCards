@@ -90,12 +90,12 @@ def main(argv):
     for state, region in state_regions:
         try:
             if _region_mode == 'County':
-                counties = state_counties[state_counties['FAC_STATE'] == state]
+                cds_or_counties = state_counties[state_counties['FAC_STATE'] == state]
             else:
-                counties = None
+                cds_or_counties = AllPrograms_util.get_cd118_shapefile(state)
             try:
                 region_echo_active[(state, region)] = (
-                    AllPrograms_db.get_active_facs(_region_mode, state, region, counties))
+                    AllPrograms_db.get_active_facs(_region_mode, state, region, cds_or_counties))
                 print("Active facilities for {}-{} = {}".format(state, region,
                                                                 len(region_echo_active[(state, region)])))
             except urllib.error.HTTPError:

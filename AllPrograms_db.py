@@ -1,28 +1,39 @@
 import pdb
 
 import pandas as pd
+import geopandas
 import sqlite3
 import AllPrograms_util
 from ECHO_modules.get_data import get_echo_data
 from Region import Region, get_inflation
 
 
-def get_active_facs(mode, state, region, counties):
+def get_active_facs(mode, state, region, cds_or_counties):
     sql = 'select * from "ECHO_EXPORTER" where '
     sql += '"FAC_STATE" = \'{}\''.format(state)
+    """ Old code for FAC_DERIVED_CD113
     if mode == 'Congressional District':
         if region != 0:
             sql += ' and "FAC_DERIVED_CD113" = {}'
             sql = sql.format(str(region))
     elif mode == 'County':
-        echo_counties = counties[counties['County'] == region]['FAC_COUNTY']
+    """
+    if mode == 'County':
+        echo_counties = cds_or_counties[cds_or_counties['County'] == region]['FAC_COUNTY']
         county_str = "\',\'".join(echo_counties.tolist())
         # county_str = "\'" + county_str + "\'"
         sql += ' and "FAC_COUNTY" in (\'{}\')'
         sql = sql.format(county_str)
         print(sql)
     region_echo_data = get_echo_data(sql, "REGISTRY_ID")
-    return region_echo_data.loc[region_echo_data["FAC_ACTIVE_FLAG"] == "Y"]
+    region_echo_data = region_echo_data.loc[region_echo_data["FAC_ACTIVE_FLAG"] == "Y"]
+    if mode == 'Congressional District':
+        region_echo_data['geometry'] = geopandas.GeoSeries.from_wkb(region_echo_data['wkb_geometry'])
+        region_echo_data.drop('wkb_geometry', axis=1, inplace=True)
+        region_echo_data = geopandas.GeoDataFrame(region_echo_data, crs=4269)
+        join = region_echo_data.sjoin(cds_or_counties, how="left")
+        region_echo_data = join.loc[join["CD118FP"].astype(float) == float(region)]
+    return region_echo_data
 
 
 def get_real_cds(state):
@@ -544,7 +555,7 @@ def _get_cd_per_1000(cursor, region_mode, state, cd, year):
                 'Congressional District')
     else:
         # Get the results for just this single state/cd
-        region_id = get_region_rowid(cursor, region_mode, state, str(cd).zfill(2))
+        region_id = AllPrograms_util.get_region_rowid(cursor, region_mode, state, str(cd).zfill(2))
         for program in ['CAA', 'CWA', 'RCRA']:
             active = _get_active_for_region(program, region_id)
             for event_type in ['inspections', 'violations', 'enforcements']:
