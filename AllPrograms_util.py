@@ -2,20 +2,21 @@ import pdb
 import pandas as pd
 import geopandas
 import io
+import os.path
 import requests
 import zipfile
 import sqlite3
 from ECHO_modules.geographies import fips
 
-def set_focus_year(year):
-    conn = sqlite3.connect("region.db")
+def set_focus_year(db, year):
+    conn = sqlite3.connect(db)
     cursor = conn.cursor()
     sql = "insert into config (focus_year) values ({})".format(year)
     cursor.execute(sql)
     conn.close()
 
-def get_focus_year():
-    conn = sqlite3.connect("region.db")
+def get_focus_year(db):
+    conn = sqlite3.connect(db)
     cursor = conn.cursor()
     sql = 'select focus_year from config'
     cursor.execute(sql)
@@ -51,12 +52,16 @@ def get_region_rowid(cursor, region_mode, state, region):
 
 
 def get_cd118_shapefile(state):
+    # See if we already have the file, so we don't need to download 
+    # and unpack it
     state_fips = fips[state]
-    url = "https://www2.census.gov/geo/tiger/TIGER2023/CD/tl_2023_"+state_fips+"_cd118.zip"
-    request = requests.get(url)
-    z = zipfile.ZipFile(io.BytesIO(request.content))
-    z.extractall("./content")
-    cd_shapefile = geopandas.read_file("./content/tl_2023_"+state_fips+"_cd118.shp", crs=4269)
+    cd_file = "./content/tl_2023_"+state_fips+"_cd118.shp"
+    if not os.path.isfile(cd_file):
+        url = "https://www2.census.gov/geo/tiger/TIGER2023/CD/tl_2023_"+state_fips+"_cd118.zip"
+        request = requests.get(url)
+        z = zipfile.ZipFile(io.BytesIO(request.content))
+        z.extractall("./content")
+    cd_shapefile = geopandas.read_file(cd_file, crs=4269)
     return cd_shapefile
 
 
@@ -121,11 +126,16 @@ def get_cwa_df(df, focus_year):
     )
     d = df.groupby(pd.to_datetime(df["YEAR"], format="%Y").dt.to_period("Y")).sum()
     d.index = d.index.strftime("%Y")
-    d1 = d[d.index <= focus_year]
-    d2 = d1[d1.index > "2000"]
+    d = d.copy()
+    d = d[d.index <= focus_year]
+    d = d[d.index > "2000"]
     cols = ['NUME90Q', 'NUMCVDT', 'NUMSVCD', 'NUMPSCH']
-    d2["Total"] = d2[cols].sum(axis=1)
-    return d2
+    d['Total'] = d[cols].sum(axis=1)
+    # d1 = d[d.index <= focus_year]
+    # d2 = d1[d1.index > "2000"]
+    # d2["Total"] = d2[cols].sum(axis=1)
+    # return d2
+    return d
 
 
 def get_inspections(ds, ds_type):

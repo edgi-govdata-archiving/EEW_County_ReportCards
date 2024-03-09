@@ -7,10 +7,10 @@ from AllPrograms_util import get_region_rowid, get_focus_year
 # Global variable for the year of the report
 Focus_Year = None
 
-def get_inflation(base_year):
+def get_inflation(db, base_year):
     # base_year is the year for which a dollar is a dollar
     base_year = int(base_year)
-    conn = sqlite3.connect("region.db")
+    conn = sqlite3.connect(db)
     cursor = conn.cursor()
 
     sql = 'select year, rate from inflation order by year desc'
@@ -56,16 +56,16 @@ class Region:
         The DataSet objects for the region 
     '''
 
-    def __init__(self, type=None, value=None, state=None, programs=None):
+    def __init__(self, db='region.db', type=None, value=None, state=None, programs=None):
 
+        self.db = db  # the Sqlite3 database
         self.type = type  # Region type
         self.value = value  # Region instance
         self.state = state  # State
         self.programs = programs  # The EPA programs to include
 
-
         if type != None:
-            conn = sqlite3.connect("region.db")
+            conn = sqlite3.connect(self.db)
             cursor = conn.cursor()
             self.region_id = get_region_rowid(cursor, self.type, self.state, self.value)
             conn.close()
@@ -77,14 +77,14 @@ class Region:
         return Focus_Year
 
     def get_counties_by_state(self, state):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
         sql = 'select region as county from regions where state=\'{}\''\
               ' and region_type=\'County\''.format(state)
         df = pd.read_sql_query(sql, conn)
         return df
 
     def get_cds(self):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
         sql = 'select state, cd from real_cds order by state, cd'
         df = pd.read_sql_query(sql, conn)
         return df
@@ -97,7 +97,7 @@ class Region:
             return self._get_region_per_1000(type, region)
         # For CDs we can just use the per_fac table and
         # active_facilities for the region
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
 
         sql = 'select program as Program, 1000. * count as Per1000 from per_fac'
         sql += ' where region_id={} and type=\'{}\' and year={}'
@@ -112,7 +112,7 @@ class Region:
     def _get_region_per_1000(self, type, region):
         # type is 'inspections' or 'violations'
         # region is 'USA', 'State', 'CD'
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
 
         sql = 'select program, sum(count) from active_facilities '
         if (self.programs is not None):
@@ -150,7 +150,7 @@ class Region:
         return df
 
     def get_recurring_violations(self, program):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
         sql = 'select sum(count) from active_facilities where '
@@ -201,7 +201,7 @@ class Region:
         return df
 
     def get_events(self, event_type, program):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
 
         if event_type == 'inspections':
             sql = 'select year Year, sum(count) Count from inspections'
@@ -245,7 +245,7 @@ class Region:
                         inflation_df[inflation_df['Year'] == row['Year']]['rate'].iloc[0]
 
     def get_non_compliants(self, program):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
 
         sql = 'select fac_name, noncomp_count, formal_action_count, dfr_url,'
         sql += ' fac_lat, fac_long from non_compliants where program=\'{}\''
@@ -263,7 +263,7 @@ class Region:
                                                         ascending=False)
 
     def get_active_facilities(self, program, table='active_facilities'):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
         cursor = conn.cursor()
 
         if (self.value is None):
@@ -285,7 +285,7 @@ class Region:
         return fetch[0] if fetch else 0
 
     def get_ranked(self):
-        conn = sqlite3.connect("region.db")
+        conn = sqlite3.connect(self.db)
 
         state_columns = 'CAA_Insp_Rank, CAA_Viol_Rank, CAA_Enf_Rank, '
         state_columns += 'CWA_Insp_Rank, CWA_Viol_Rank, CWA_Enf_Rank, '

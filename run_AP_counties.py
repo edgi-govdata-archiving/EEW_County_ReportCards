@@ -8,6 +8,7 @@ import os.path
 import sqlite3
 from datetime import datetime
 
+_database = 'region_counties.db'
 target_year = 2023
 def move_if_exists(filename, timestamp):
     new_name = "{}-{}".format(filename, timestamp)
@@ -33,7 +34,7 @@ def clean_region_db(state = None):
     # Only clean the regions table if state is ''
     # *_per_1000 tables are always fully deleted as they are
     # constructed after all states by a separate program.
-    conn = sqlite3.connect("region.db")
+    conn = sqlite3.connect(_database)
     cur = conn.cursor()
     tables = ['active_facilities',
               'violations',
@@ -101,33 +102,33 @@ def main(argv):
     # Read the states_file
     states_file = open(my_args.states_file)
     if my_args.start_state:
-        # Clean the start_state, leave all other data in region.db intact.
+        # Clean the start_state, leave all other data in region_counties.db intact.
         # Restart the run with the start_state.
         print("start_state is {}".format(my_args.start_state))
         next_state = clean_to_start_state(states_file, my_args.start_state)
     else:
-        # Copy the current region.db, clean data and run all states.
-        print("Saving the current region.db")
-        save_name = "region.db-{}".format(current_datetime)
-        command = "cp region.db {}".format(save_name)
+        # Copy the current region_counties.db, clean data and run all states.
+        print("Saving the current region_counties.db")
+        save_name = "{}-{}".format(_database, current_datetime)
+        command = "cp {} {}".format(_database, save_name)
         rslt = subprocess.call(command,shell=True)
         if rslt == 0:
             clean_region_db()
             next_state = states_file.readline().rstrip()
         else:
-            # A new region.db will be needed.
+            # A new region_counties.db will be needed.
             # The inflation and real_cds tables need to be populated.
-            print("region.db not found.")
-            command = "sqlite3 region.db < region_db.schema"
+            print("region_counties.db not found.")
+            command = "sqlite3 {} < region_db.sql".format(_database)
             rslt = subprocess.call(command, shell=True)
             if rslt != 0:
-                print("ERROR: Unable to create region.db")
+                print("ERROR: Unable to create {}".format(_database))
                 exit(-1)
-            command = "sqlite3 region.db < real_cds.sql"
+            command = "sqlite3 {} < real_cds.sql".format(_database)
             rslt = subprocess.call(command, shell=True)
             if rslt != 0:
                 print("ERROR: Unable to load real_cds table")
-            command = "sqlite3 region.db < inflation.sql"
+            command = "sqlite3 {} < inflation.sql".format(_database)
             rslt = subprocess.call(command, shell=True)
             if rslt != 0:
                 print("ERROR: Unable to load inflation table")
@@ -140,7 +141,9 @@ def main(argv):
     print("Continuing with {}".format(next_state))
 
     while (True):
-        command = "python3 AllPrograms.py -c {} -f {}".format(next_state, target_year)
+        command = "python3 AllPrograms.py -b {} -c {} -f {}".format(_database,
+                                                                    next_state, 
+                                                                    target_year)
         rslt = subprocess.call(command, shell=True)
         if rslt != 0:
             print("ERROR: AllPrograms failed on state: {}".format(next_state))
