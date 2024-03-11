@@ -61,7 +61,8 @@ def get_cd118_shapefile(state):
         request = requests.get(url)
         z = zipfile.ZipFile(io.BytesIO(request.content))
         z.extractall("./content")
-    cd_shapefile = geopandas.read_file(cd_file, crs=4269)
+    gdf = geopandas.read_file(cd_file, crs=4269)
+    cd_shapefile = gdf[gdf['CD118FP'].apply(pd.to_numeric, errors='coerce').notna()].dropna()
     return cd_shapefile
 
 
